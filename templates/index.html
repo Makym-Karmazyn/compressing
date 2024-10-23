@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hyffman_compressing</title>
+    <link rel="stylesheet" href="/static/compress.css">
+    <script src="/static/compress.js"></script>
+
+</head>
+<body>
+<form method="post" id="full_form" enctype="multipart/form-data">
+    <div class="container">
+
+        <div class="translator">
+            <div class="input-section">
+
+            <label for="file">Choose file to upload</label>
+            <input type="file" id="file" name="file" multiple />
+
+            <p>Please select you need to compress or decompress this file?</p>
+            <input type="radio" id="compress" name="compress_or_decompress" value="compress">
+            <label for="compress">compress</label><br>
+            <input type="radio" id="decompress" name="compress_or_decompress" value="decompress">
+            <label for="decompress">decompress</label><br>
+
+
+            </div>
+            <div class="output-section" id="outputText">
+
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Вставте свій файл та оберіть що ви хочите зробити, <u>зашифрувати файл</u> чи <u>розшифрувати</u>його?<b style="color:red">Обовязково для розшифровки потрібно щоб файл був зашифрований саме на цій сторінці, інакше ж розшифровка не спрацює!!!</b></p>
+            <button class="lang-btn" type="button" onclick="load_filee(event)">submit</button>
+        </div>
+        <p style="font-size: 10px">Нажаль не вийшло зробити так щоб можна було взяти файл через форму не з тої папки в якій знаходиться проект. Отож текстовий файл має бути у тій же самій папці що проект. Вибачте за незручності...</p>
+
+    </div>
+</form>
+</body>
+</html>

@@ -1,0 +1,201 @@
+import random
+import string
+
+from database import load_code, check_password, save_code
+
+
+
+
+def HuffmanDecodingUsingDB(encodedData,password):
+    codes = load_code(password)  # Завантажуємо коди з бази даних
+    reverse_codes = {code: symbol for symbol, code in codes.items()}  # Інвертуємо словник для швидкого пошуку
+
+    decodedOutput = []
+    temp_code = ''
+    for bit in encodedData:
+        temp_code += bit
+        if temp_code in reverse_codes:
+            decodedOutput.append(reverse_codes[temp_code])
+            temp_code = ''
+
+    return ''.join(decodedOutput)
+
+
+
+
+
+
+class Nodes:
+    def __init__(self, probability, symbol, left=None, right=None):
+        self.probability = probability
+        self.symbol = symbol
+        self.left = left
+        self.right = right
+        self.code = ''
+
+def generate_password(length=8):
+    characters = string.ascii_letters + string.digits
+    password = ''.join(random.choice(characters) for i in range(length))
+    return password
+
+# Функція для обчислення ймовірностей символів у даних
+def CalculateProbability(the_data):
+    the_symbols = {}
+    for item in the_data:
+        if item in the_symbols:
+            the_symbols[item] += 1
+        else:
+            the_symbols[item] = 1
+    return the_symbols
+
+# Функція для розрахунку кодів для символів шляхом проходження дерева Гаффмана
+the_codes = {}
+
+def CalculateCodes(node, value=''):
+    newValue = value + str(node.code)
+    if node.left:
+        CalculateCodes(node.left, newValue)
+    if node.right:
+        CalculateCodes(node.right, newValue)
+    if not node.left and not node.right:
+        the_codes[node.symbol] = newValue
+    return the_codes
+
+# Функція для кодування
+def OutputEncoded(the_data, coding):
+    return ''.join([coding[element] for element in the_data])
+
+# Функція для запису бітової послідовності в файл
+def write_bits_to_file(file_name, encoded_data,password):
+    with open(file_name, 'wb') as f:
+        byte_array = bytearray()
+        # Спершу записуємо пароль у вигляді ASCII символів
+        f.write(password.encode('utf-8') + b'\n')
+        # Потім записуємо бітову послідовність
+        for i in range(0, len(encoded_data), 8):
+            byte_chunk = encoded_data[i:i + 8]
+            byte_array.append(int(byte_chunk, 2))  # Перетворення бітової послідовності на байт
+        f.write(byte_array)
+
+# Функція для декодування файлу
+def read_bits_from_file(file_name):
+    with open(file_name, 'rb') as f:
+        # Читаємо перший рядок як пароль
+        password = f.readline().strip().decode('utf-8')
+        # Читаємо решту файлу як бітову послідовність
+        byte_data = f.read()
+        bits = ''.join(format(byte, '08b') for byte in byte_data)  # Перетворення байтів у бітову послідовність
+    return password, bits
+
+# Основна функція для виконання кодування за алгоритмом Гаффмана
+# def HuffmanEncoding(the_data, file_name):
+#     symbolWithProbs = CalculateProbability(the_data)
+#     the_nodes = [Nodes(prob, symbol) for symbol, prob in symbolWithProbs.items()]
+#
+#     while len(the_nodes) > 1:
+#         the_nodes = sorted(the_nodes, key=lambda x: x.probability)
+#         left = the_nodes.pop(0)
+#         right = the_nodes.pop(0)
+#         left.code = '0'
+#         right.code = '1'
+#         newNode = Nodes(left.probability + right.probability, left.symbol + right.symbol, left, right)
+#         the_nodes.append(newNode)
+#
+#     huffmanEncoding = CalculateCodes(the_nodes[0])
+#
+#     # Викликаємо save_code з іменем файлу
+#     save_code(huffmanEncoding, file_name)
+#
+#     encodedOutput = OutputEncoded(the_data, huffmanEncoding)
+#     return encodedOutput, the_nodes[0]
+
+
+
+def HuffmanEncoding(the_data):
+    symbolWithProbs = CalculateProbability(the_data)
+    the_nodes = [Nodes(prob, symbol) for symbol, prob in symbolWithProbs.items()]
+    while len(the_nodes) > 1:
+        the_nodes = sorted(the_nodes, key=lambda x: x.probability)
+        left = the_nodes.pop(0)
+        right = the_nodes.pop(0)
+        left.code = '0'
+        right.code = '1'
+        newNode = Nodes(left.probability + right.probability, left.symbol + right.symbol, left, right)
+        the_nodes.append(newNode)
+    huffmanEncoding = CalculateCodes(the_nodes[0])
+    # Викликаємо save_code з іменем файлу
+    # Генеруємо унікальний пароль для цього файлу
+    password = generate_password()
+    dublicat = check_password(password)
+    while dublicat == True:
+        password = generate_password()
+        dublicat = check_password(password)
+
+    save_code(huffmanEncoding, password)
+    encodedOutput = OutputEncoded(the_data, huffmanEncoding)
+    return encodedOutput, the_nodes[0], password
+
+
+# Функція для декодування даних
+def HuffmanDecoding(encodedData, huffmanTree):
+    treeHead = huffmanTree
+    decodedOutput = []
+    for bit in encodedData:
+        huffmanTree = huffmanTree.right if bit == '1' else huffmanTree.left
+        if not huffmanTree.left and not huffmanTree.right:
+            decodedOutput.append(huffmanTree.symbol)
+            huffmanTree = treeHead
+    return ''.join(decodedOutput)
+
+
+# Кодування Гаффмана
+
+
+if __name__ == "__main__":
+        inp = int(input("1 for compress and 2 for decompress: "))
+        if inp == 1:
+            # Читання вихідного файлу
+            name_f = input("name: ")
+            with open(f"{name_f}.txt", "r") as first_file:
+                the_data = first_file.read()
+
+            # Кодування Гаффмана з передачею імені файлу
+            encoding, the_tree, password = HuffmanEncoding(the_data)
+
+            # Збереження кодів для цього файлу
+            # save_code(the_codes, name_f)
+
+            print("Encoded output:", encoding)
+            print(f"Password for this file: {password}")
+
+            # Запис стиснутих даних і пароля у файл
+            write_bits_to_file(f"{name_f}_compressed.bin", encoding, password)
+
+        else:
+            name_f = input("name: ")
+
+            # Читаємо пароль та закодовані біти з файлу
+            password, encoded_bits = read_bits_from_file(f"{name_f}_compressed.bin")
+
+            print(f"Password read from file: {password}")
+
+            # Декодування за допомогою кодів із бази даних для конкретного файлу
+            decoded_data = HuffmanDecodingUsingDB(encoded_bits, password)
+
+            # Запис декодованих даних у файл
+            with open(f"{name_f}_decompressed.txt", "w") as new_file:
+                new_file.write(decoded_data)
+
+            print("Decompression 
+            with open(f"{name_f}_decompressed.txt", "w") as new_file:
+                new_file.write(decoded_data)
+
+            print("Decompression 
+            with open(f"{name_f}_decompressed.txt", "w") as new_file:
+                new_file.write(decoded_data)
+
+            print("Decompression 
+            with open(f"{name_f}_decompressed.txt", "w") as new_file:
+                new_file.write(decoded_data)
+
+            print("Decompression complete!")4765476125rfwytsqcvxhjsw xlswb
